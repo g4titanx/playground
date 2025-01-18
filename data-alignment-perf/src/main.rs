@@ -51,7 +51,7 @@ where
         + std::ops::AddAssign
         + From<i32>,
 {
-    const N: usize = 10_000_000;   // Number of elements to process
+    const N: usize = 1_000_000;   // Number of elements to process
     const REPEAT: usize = 20;       // Number of test iterations
 
     println!("Processing word of size {}", std::mem::size_of::<T>());
@@ -80,7 +80,7 @@ where
 
             // Write phase - convert index to i32 before converting to T
             for i in 0..N {
-                base_vec.push(T::from(i as i32));
+                base_vec.push(T::from((i % 1000) as i32));
             }
 
             // Read and compute phase
@@ -89,8 +89,11 @@ where
             let mut val = T::from(1);
             for i in offset..N + offset {
                 val += base_vec[i] * val + T::from(33);
+                if i % 1000 == 0 {
+                    val = T::from(1); // reset periodically to prevent overflow
+                }
             }
-
+            
             let elapsed = start.elapsed().as_millis();
             sum_time += elapsed as f64;
             print!("{val:?}");
