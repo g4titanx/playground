@@ -1,8 +1,14 @@
+/// This is a performance benchmark designed to measure the impact of memory alignment on read/write 
+/// operations for different numeric types (i32, i64, i128). 
+/// It tests how unaligned memory access affects execution time by allocating a buffer with intentional 
+/// offsets and performing a large number of operations on it.
+
 use std::alloc::{alloc, Layout, dealloc};
 use std::time::Instant;
 use std::fmt::Debug;
 use std::ptr;
 use std::sync::atomic::{fence, Ordering};
+use num_traits::ToPrimitive;
 
 struct UnalignedBuffer<T> {
     ptr: *mut u8,
@@ -43,7 +49,8 @@ where
     T: Copy + Debug + 
        std::ops::Add<Output = T> + 
        std::ops::AddAssign +
-       From<i32> + std::cmp::PartialEq,
+       From<i32> + std::cmp::PartialEq +
+       ToPrimitive,
 {
     // Increased workload
     const N: usize = 10_000_000;
@@ -88,10 +95,12 @@ where
         // Convert back to milliseconds for display
         println!(" avg: {:.3}ms", (sum_time / REPEAT as f64) / 1_000_000.0);
         
-        // Print a checksum to prevent optimization
-        let checksum: T = results.iter().copied().fold(T::from(0), |acc, x| acc + x);
+        // Print a checksum to prevent optimization, using i64 to avoid overflow
+        let checksum: i64 = results.iter()
+            .map(|&x| x.to_i64().unwrap())
+            .fold(0, |acc, x| acc + x);
         print!(".");
-        if checksum == T::from(0) { print!("!"); }
+        if checksum == 0 { print!("!"); }
     }
 }
 
